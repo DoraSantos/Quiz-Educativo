@@ -4,7 +4,98 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quiz Educativo</title>
-    <link rel="stylesheet" href="style.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            background: linear-gradient(to right, #2e8b57, #a3d4b8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #ffffff;
+        }
+
+        .app {
+            width: 400px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            color: #f3f3f3;
+        }
+
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            background: #007bff;
+            color: #ffffff;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .btn.correct {
+            background: #00ff00;
+        }
+
+        .btn.wrong {
+            background: #f44336;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        #result-container {
+            margin-top: 20px;
+        }
+
+        #corrections {
+            text-align: left;
+            margin-top: 10px;
+            color: #d3d3d3;
+        }
+
+        #about-btn {
+            margin-top: 20px;
+            padding: 12px;
+            border: none;
+            background: #ff9800;
+            color: #ffffff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #about-btn:hover {
+            background: #e68900;
+        }
+
+        #question-container {
+            color: #e6e6e6;
+        }
+    </style>
 </head>
 <body>
     <div class="app">
@@ -22,7 +113,125 @@
             <button id="start-btn" class="btn">Iniciar Jogo</button>
             <button id="next-btn" class="btn hide">Próxima</button>
         </div>
+        <button id="about-btn" onclick="window.location.href='app.html'">Sobre o App</button>
     </div>
-    <script src="script.js"></script>
+    <script>
+        const startButton = document.getElementById("start-btn");
+        const nextButton = document.getElementById("next-btn");
+        const questionContainer = document.getElementById("question-container");
+        const resultContainer = document.getElementById("result-container");
+        const questionElement = document.getElementById("question");
+        const answerButtons = document.getElementById("answer-buttons");
+        const scoreElement = document.getElementById("score");
+        const correctionsElement = document.getElementById("corrections");
+
+        let shuffledQuestions, currentQuestionIndex;
+        let score = 0;
+        let answersLog = [];
+
+        startButton.addEventListener("click", startGame);
+        nextButton.addEventListener("click", () => {
+            currentQuestionIndex++;
+            setNextQuestion();
+        });
+
+        function startGame() {
+            startButton.classList.add("hide");
+            resultContainer.classList.add("hide");
+            score = 0;
+            answersLog = [];
+            shuffledQuestions = questions.sort(() => Math.random() - 0.5);
+            currentQuestionIndex = 0;
+            questionContainer.classList.remove("hide");
+            setNextQuestion();
+        }
+
+        function setNextQuestion() {
+            resetState();
+            showQuestion(shuffledQuestions[currentQuestionIndex]);
+        }
+
+        function showQuestion(question) {
+            questionElement.innerText = question.question;
+            question.answers.forEach((answer) => {
+                const button = document.createElement("button");
+                button.innerText = answer.text;
+                button.classList.add("btn");
+                if (answer.correct) {
+                    button.dataset.correct = answer.correct;
+                }
+                button.addEventListener("click", selectAnswer);
+                answerButtons.appendChild(button);
+            });
+        }
+
+        function resetState() {
+            nextButton.classList.add("hide");
+            while (answerButtons.firstChild) {
+                answerButtons.removeChild(answerButtons.firstChild);
+            }
+        }
+
+        function selectAnswer(e) {
+            const selectedButton = e.target;
+            const correct = selectedButton.dataset.correct === "true";
+
+            if (correct) score++;
+            answersLog.push({
+                question: shuffledQuestions[currentQuestionIndex].question,
+                correctAnswer: shuffledQuestions[currentQuestionIndex].answers.find(a => a.correct).text,
+                userAnswer: selectedButton.innerText
+            });
+
+            setStatusClass(selectedButton, correct);
+            Array.from(answerButtons.children).forEach(button => {
+                setStatusClass(button, button.dataset.correct === "true");
+            });
+
+            if (shuffledQuestions.length > currentQuestionIndex + 1) {
+                nextButton.classList.remove("hide");
+            } else {
+                showResults();
+            }
+        }
+
+        function setStatusClass(element, correct) {
+            clearStatusClass(element);
+            if (correct) {
+                element.classList.add("correct");
+            } else {
+                element.classList.add("wrong");
+            }
+        }
+
+        function clearStatusClass(element) {
+            element.classList.remove("correct");
+            element.classList.remove("wrong");
+        }
+
+        function showResults() {
+            questionContainer.classList.add("hide");
+            resultContainer.classList.remove("hide");
+            scoreElement.innerText = `Pontuação Final: ${score}/${shuffledQuestions.length}`;
+
+            correctionsElement.innerHTML = "";
+            answersLog.forEach(log => {
+                const li = document.createElement("li");
+                li.innerHTML = `<b>Pergunta:</b> ${log.question} <br> 
+                                <b>Resposta correta:</b> ${log.correctAnswer} <br>
+                                <b>Sua resposta:</b> ${log.userAnswer}`;
+                correctionsElement.appendChild(li);
+            });
+
+            startButton.innerText = "Reiniciar";
+            startButton.classList.remove("hide");
+        }
+
+        const questions = [
+            { question: "Qual é a capital de Portugal?", answers: [{ text: "Lisboa", correct: true }, { text: "Porto", correct: false }, { text: "Coimbra", correct: false }, { text: "Faro", correct: false }] },
+            { question: "Quem escreveu 'Os Lusíadas'?", answers: [{ text: "Fernando Pessoa", correct: false }, { text: "Camões", correct: true }, { text: "Eça de Queirós", correct: false }, { text: "José Saramago", correct: false }] },
+            { question: "Qual é o maior oceano?", answers: [{ text: "Atlântico", correct: false }, { text: "Pacífico", correct: true }, { text: "Índico", correct: false }, { text: "Ártico", correct: false }] }
+        ];
+    </script>
 </body>
 </html>
